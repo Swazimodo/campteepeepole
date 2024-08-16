@@ -83,7 +83,7 @@ interface RowWrapperProps {
 }
 
 const RowWrapper: FC<RowWrapperProps> = (props) => {
-  let Wrapper = RowDiv;
+  let Wrapper: React.ElementType = RowDiv;
   if (props.hasError) {
     Wrapper = ErrorRowDiv;
   } else if (props.isNew) {

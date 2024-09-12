@@ -8,7 +8,7 @@ import { Footer } from 'layout/footer'
 import { MediaSizes, getMaxWidthQuery, ToastMessageEmitter } from 'common';
 
 
-interface PageProps {
+export interface PageProps {
   children?: React.ReactNode
 }
 

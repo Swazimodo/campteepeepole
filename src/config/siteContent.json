@@ -1,0 +1,23 @@
+{
+  "browserTitle": "CampTeepeePole",
+  "headerTitle": "Camp Teepee Pole",
+  "tabs": [
+    {
+      "path": "welcome",
+      "title": "Welcome",
+      "index": true
+    },
+    {
+      "path": "about",
+      "title": "About Us"
+    },
+    {
+      "path": "events",
+      "title": "Events"
+    },
+    {
+      "path": "contact",
+      "title": "Contact Us"
+    }
+  ]
+}

@@ -1,15 +1,17 @@
 import { FC } from 'react';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components'
 
-import { useSiteConfig } from 'config/useSiteConfig';
+import { useSiteConfig } from '@/components/config';
 
 export const Nav: FC = () => {
   const config = useSiteConfig()
   return <SiteNav>
     <ul>
       {config.tabs.map(page =>
-        <li key={page.path}><Link to={page.path}>{page.title}</Link></li>)}
+        <li key={page.path}>
+          {/* <Link to={page.path}>{page.title}</Link> */}
+          {page.path}:{page.title}
+        </li>)}
     </ul>
   </SiteNav>
 }

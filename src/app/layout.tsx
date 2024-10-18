@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 
 import 'src/app/global.css'
 
-import { Header, Footer, Nav, getMaxWidthQuery, MediaSizes, useSiteConfig } from '@/components'
+import { Header, Footer, Nav, useSiteConfig } from '@/components'
 
 type GenerateMetadataProps = {
   params: { id: string }

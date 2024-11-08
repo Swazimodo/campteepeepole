@@ -1,32 +1,34 @@
 import { FC } from 'react';
-import styled from 'styled-components'
+import styled from 'styled-components';
+import Link from 'next/link';
 
 import { useSiteConfig } from '@/components/config';
 
 export const Nav: FC = () => {
   const config = useSiteConfig()
+
   return <SiteNav>
-    <ul>
-      {config.tabs.map(page =>
-        <li key={page.path}>
-          {/* <Link to={page.path}>{page.title}</Link> */}
-          {page.path}:{page.title}
-        </li>)}
-    </ul>
+    <SiteNavUl>
+      {config.tabs.map(page => <SiteNavLi key={page.path}>
+        <Link href={page.path}>
+          {page.title}
+        </Link>
+      </SiteNavLi>)}
+    </SiteNavUl>
   </SiteNav>
 }
 
 const SiteNav = styled.nav`
   background-color: #4f1492;
+`
 
-  ul {
-    padding: 0;
-  }
+const SiteNavUl = styled.ul`
+  padding: 0;
+`
 
-  li {
-    display: inline-block;
-    padding: 0 8px;
-  }
+const SiteNavLi = styled.li`
+  display: inline-block;
+  padding: 0 8px;
 
   a:link,
   a:visited,

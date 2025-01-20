@@ -14,6 +14,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   // fetch config from s3
+  const configFileUrl = process.env.SITE_CONFIG_JSON_URL
   // const config = await fetch(`https://.../${id}`).then((res) => res.json())
 
   // optionally access and extend (rather than replace) parent metadata

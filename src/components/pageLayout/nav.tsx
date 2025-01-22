@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Link from 'next/link';
 
 import { useSiteConfig } from '@/components/config';
+import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
 export const Nav: FC = () => {
   const config = useSiteConfig()
@@ -24,16 +25,20 @@ const SiteNav = styled.nav`
 
 const SiteNavUl = styled.ul`
   padding: 0;
+  margin: 8px 8px;
 `
 
 const SiteNavLi = styled.li`
-  display: inline-block;
-  padding: 0 8px;
+  padding: 8px 8px;
 
   a:link,
   a:visited,
   a:hover,
   a:active {
     color: orange;
+  }
+
+  @media ${getMinWidthQuery(MediaSizes.sm)} {
+    display: inline-block;
   }
 `

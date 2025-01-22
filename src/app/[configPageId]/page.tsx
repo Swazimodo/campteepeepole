@@ -13,5 +13,5 @@ export default function Page(props: PageProps) {
 
 export async function generateStaticParams() {
   const config = useSiteConfig()
-  return Promise.resolve(config.tabs.map(x => ({ configPageId: x.path })))
+  return await Promise.resolve(config.tabs.map(x => ({ configPageId: x.path })))
 }

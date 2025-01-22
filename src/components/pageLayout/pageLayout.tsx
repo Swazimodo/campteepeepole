@@ -12,12 +12,14 @@ interface LayoutProps {
 
 export const PageLayout: FC<LayoutProps> = (props) => {
   const { children } = props;
-  return <PageDiv className='App'>
+  return <PageDiv>
     <Header />
-    <Nav />
-    <ContentMain>
-      {children}
-    </ContentMain>
+    <ContentWrapper>
+      <Nav />
+      <ContentMain>
+        {children}
+      </ContentMain>
+    </ContentWrapper>
     <Footer />
   </PageDiv>
 }
@@ -25,18 +27,18 @@ export const PageLayout: FC<LayoutProps> = (props) => {
 const PageDiv = styled.div`
   display: flex;
   flex-direction: column;
+  height: 100%;
+`
 
-  > div {
-    padding: 8px;
-  }
+const ContentWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 `
 
 const ContentMain = styled.main`
   flex-grow: 1;
   max-width: 1200px;
+  padding: 0 16px;
   margin: 16px auto;
-
-  @media ${getMaxWidthQuery(MediaSizes.sm)} {
-    width: 100%;
-  }
 `

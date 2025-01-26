@@ -1,10 +1,8 @@
 import { FC } from 'react';
 import styled from 'styled-components';
 
-import { getMaxWidthQuery, MediaSizes } from '@/components/mediaQueries';
-import { Header } from '@/components/pageLayout/header';
+import Header from '@/components/pageLayout/Header';
 import { Footer } from '@/components/pageLayout/footer';
-import { Nav } from '@/components/pageLayout/nav';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,9 +11,8 @@ interface LayoutProps {
 export const PageLayout: FC<LayoutProps> = (props) => {
   const { children } = props;
   return <PageDiv>
-    <Header />
     <ContentWrapper>
-      <Nav />
+      <Header />
       <ContentMain>
         {children}
       </ContentMain>

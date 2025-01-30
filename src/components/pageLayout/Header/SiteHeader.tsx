@@ -7,7 +7,7 @@ interface SiteHeaderProps {
 
 export const SiteHeader: FC<SiteHeaderProps> = (props) => {
   return <SiteHeaderHeader>
-    header
+    <div>header</div>
     <BurgerButton onClick={props.onMenuClick} />
   </SiteHeaderHeader>
 }
@@ -15,4 +15,7 @@ export const SiteHeader: FC<SiteHeaderProps> = (props) => {
 const SiteHeaderHeader = styled.header`
   height: 40px;
   background-color: #3f41c9;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 `

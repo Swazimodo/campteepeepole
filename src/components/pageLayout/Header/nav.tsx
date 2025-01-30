@@ -21,11 +21,12 @@ export const Nav: FC = () => {
 
 const SiteNav = styled.nav`
   background-color: #4f1492;
+  padding: 8px 8px;
 `
 
 const SiteNavUl = styled.ul`
   padding: 0;
-  margin: 8px 8px;
+  margin: 0;
 `
 
 const SiteNavLi = styled.li`

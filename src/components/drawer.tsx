@@ -1,75 +1,42 @@
 import { FC, useCallback, useState } from "react";
+import styled, { css, keyframes } from "styled-components";
 
-export enum DrawerAnimationFinalState {
+export enum DrawerAnimationState {
   Open,
   Closed
 }
 
-enum DrawerAnimationTransientState {
-  Opening,
-  Closing
-}
-
-export type DrawerAnimationState = DrawerAnimationFinalState | DrawerAnimationTransientState
-
-interface DrawerProps {
-  children: React.ReactNode;
-  drawerState: DrawerState;
-}
-
-export const Drawer: FC<DrawerProps> = (props) => {
-  const { children, drawerState } = props
-
-  if (drawerState.targetState === DrawerAnimationFinalState.Closed) {
-    return null
-  }
-
-  return <div
-    onAnimationEnd={props.drawerState.handleAnimationEnd}
-  >
-    {children}
-  </div>
-}
-
 export interface DrawerState {
   currentState: DrawerAnimationState
-  targetState: DrawerAnimationFinalState
+  targetState: DrawerAnimationState
   handleToggleDrawer: () => void
   handleCloseDrawer: () => void
   handleOpenDrawer: () => void
-  handleAnimationEnd: () => void
+  setCurrentState: (state: DrawerAnimationState) => void
 }
 
-export const useDrawerState = (initialState: DrawerAnimationFinalState): DrawerState => {
+export const useDrawerState = (initialState: DrawerAnimationState): DrawerState => {
   const [currentState, setCurrentState] = useState<DrawerAnimationState>(initialState)
-  const [targetState, setTargetState] = useState<DrawerAnimationFinalState>(initialState)
+  const [targetState, setTargetState] = useState<DrawerAnimationState>(initialState)
 
   // event handlers to open and close drawer
   const handleToggleDrawer = useCallback(() => {
-    if (targetState === DrawerAnimationFinalState.Open) {
-      setTargetState(DrawerAnimationFinalState.Closed)
-      setCurrentState(DrawerAnimationTransientState.Closing)
+    if (targetState === DrawerAnimationState.Open) {
+      setTargetState(DrawerAnimationState.Closed)
     } else {
-      setTargetState(DrawerAnimationFinalState.Open)
-      setCurrentState(DrawerAnimationTransientState.Opening)
+      setTargetState(DrawerAnimationState.Open)
     }
-  }, [targetState, setTargetState, setCurrentState])
+  }, [targetState, setTargetState])
   const handleCloseDrawer = useCallback(() => {
-    if (targetState === DrawerAnimationFinalState.Open) {
-      setTargetState(DrawerAnimationFinalState.Closed)
-      setCurrentState(DrawerAnimationTransientState.Closing)
+    if (targetState === DrawerAnimationState.Open) {
+      setTargetState(DrawerAnimationState.Closed)
     }
-  }, [targetState, setTargetState, setCurrentState])
+  }, [targetState, setTargetState])
   const handleOpenDrawer = useCallback(() => {
-    if (targetState === DrawerAnimationFinalState.Closed) {
-      setTargetState(DrawerAnimationFinalState.Open)
-      setCurrentState(DrawerAnimationTransientState.Opening)
+    if (targetState === DrawerAnimationState.Closed) {
+      setTargetState(DrawerAnimationState.Open)
     }
-  }, [targetState, setTargetState, setCurrentState])
-
-  // event handler to detect animation completion
-  const handleAnimationEnd = useCallback(
-    () => setCurrentState(targetState), [targetState, setCurrentState])
+  }, [targetState, setTargetState])
 
   return {
     currentState,
@@ -77,6 +44,107 @@ export const useDrawerState = (initialState: DrawerAnimationFinalState): DrawerS
     handleToggleDrawer,
     handleCloseDrawer,
     handleOpenDrawer,
-    handleAnimationEnd
+    setCurrentState
   }
 }
+
+interface DrawerProps {
+  children: React.ReactNode;
+  drawerState: DrawerState;
+}
+
+export const Drawer: FC<DrawerProps> = (props) => {
+  const { children, drawerState: { currentState, targetState, setCurrentState, handleCloseDrawer } } = props
+  // event handler to detect animation completion
+  const handleAnimationEnd = useCallback(
+    () => {
+      setCurrentState(targetState)
+    },
+    [targetState, setCurrentState])
+
+  if (currentState === targetState && currentState === DrawerAnimationState.Closed) {
+    return null
+  }
+
+  return <DrawerWrapperDiv targetState={targetState}>
+    <DrawerContentDiv
+      targetState={targetState}
+      onAnimationEnd={handleAnimationEnd}
+    >
+      <button onClick={handleCloseDrawer}>close</button>
+      {children}
+    </DrawerContentDiv>
+  </DrawerWrapperDiv>
+}
+
+interface DrawerDivProps {
+  targetState: DrawerAnimationState
+}
+
+const backdropFadeIn = keyframes`
+  from {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+`
+
+const backdropFadeOut = keyframes`
+  from {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  to {
+    background-color: rgba(255, 255, 255, 0);
+  }
+`
+
+const DrawerWrapperDiv = styled.div<DrawerDivProps>`
+  background-color: rgba(0, 0, 0, 0.5);
+
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+
+  animation: ${backdropFadeIn} .3s forwards;
+  ${props => props.targetState === DrawerAnimationState.Closed && css`
+    animation: ${backdropFadeOut} .3s forwards;
+  `}
+`
+
+const slideIn = keyframes`
+  from {
+    transform: translate(100%, 0);
+    opacity:0;
+  }
+  to {
+    transform: translate(0%, 0);
+    opacity: 1;
+  }
+`
+
+const slideOut = keyframes`
+  from {
+    transform: translate(0%, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(100%, 0);
+    opacity:0;
+  }
+`
+
+const DrawerContentDiv = styled.div<DrawerDivProps>`
+  background-color: green;
+
+  position: relative;
+  width: calc(100% - 40px);
+  height: 100%;
+  margin-left: 40px;
+
+  animation: ${slideIn} .3s forwards;
+  ${props => props.targetState === DrawerAnimationState.Closed && css`
+    animation: ${slideOut} .3s forwards;
+  `}
+`

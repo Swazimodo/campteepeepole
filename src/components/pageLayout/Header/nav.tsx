@@ -31,6 +31,7 @@ const SiteNavUl = styled.ul`
 
 const SiteNavLi = styled.li`
   padding: 8px 8px;
+  list-style-type: none;
 
   a:link,
   a:visited,

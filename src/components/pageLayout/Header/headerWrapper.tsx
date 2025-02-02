@@ -7,7 +7,7 @@ export const HeaderWrapper = () => {
   const drawerState = useDrawerState(DrawerAnimationState.Closed)
   const { matchesDown } = useMediaQuery(MediaSizes.sm)
 
-  let nav = <Nav />
+  let nav = <Nav onNavigation={drawerState.handleCloseDrawer} />
   if (matchesDown) {
     nav = <Drawer drawerState={drawerState}>{nav}</Drawer>
   }

@@ -65,7 +65,7 @@ export const Drawer: FC<DrawerProps> = (props) => {
     },
     [targetState, setCurrentState])
 
-  // prevent menu clicks from bubbling up and closing the drawer
+  // prevent menu div or child clicks from bubbling up and closing the drawer
   const handleClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
   }, [])
@@ -99,7 +99,7 @@ const CloseButton = styled.button`
   right: 0;
   z-index: 100;
   background: rgba(255, 255, 255, 0.5);
-  margin: 6px;
+  margin: 4px;
   border-radius: 16px;
 `
 

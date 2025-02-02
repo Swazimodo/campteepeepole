@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
 interface BurgerButtonProps {
-  onClick: () => void
+  onClick: (event: React.MouseEvent) => void
 }
 
 export const BurgerButton: FC<BurgerButtonProps> = (props) => {

@@ -2,7 +2,7 @@ import { FC } from 'react';
 import styled from 'styled-components'
 import { BurgerButton } from '@/components/pageLayout/Header/burgerButton';
 interface SiteHeaderProps {
-  onMenuClick: () => void
+  onMenuClick: (event: React.MouseEvent) => void
 }
 
 export const SiteHeader: FC<SiteHeaderProps> = (props) => {

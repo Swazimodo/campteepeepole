@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { useSiteConfig } from '@/components/config';
 import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
-export const Nav: FC = () => {
+interface NavProps {
+  onNavigation?: (event: React.MouseEvent) => void
+}
+
+export const Nav: FC<NavProps> = (props) => {
   const config = useSiteConfig()
 
   return <SiteNav>
     <SiteNavUl>
       {config.tabs.map(page => <SiteNavLi key={page.path}>
-        <Link href={page.path}>
+        <Link href={page.path} onClick={props?.onNavigation}>
           {page.title}
         </Link>
       </SiteNavLi>)}

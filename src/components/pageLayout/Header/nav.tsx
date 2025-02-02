@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { useSiteConfig } from '@/components/config';
 import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
-export const Nav: FC = () => {
+interface NavProps {
+  onNavigation?: (event: React.MouseEvent) => void
+}
+
+export const Nav: FC<NavProps> = (props) => {
   const config = useSiteConfig()
 
   return <SiteNav>
     <SiteNavUl>
       {config.tabs.map(page => <SiteNavLi key={page.path}>
-        <Link href={page.path}>
+        <Link href={page.path} onClick={props?.onNavigation}>
           {page.title}
         </Link>
       </SiteNavLi>)}
@@ -21,15 +25,17 @@ export const Nav: FC = () => {
 
 const SiteNav = styled.nav`
   background-color: #4f1492;
+  padding: 8px 8px;
 `
 
 const SiteNavUl = styled.ul`
   padding: 0;
-  margin: 8px 8px;
+  margin: 0;
 `
 
 const SiteNavLi = styled.li`
   padding: 8px 8px;
+  list-style-type: none;
 
   a:link,
   a:visited,

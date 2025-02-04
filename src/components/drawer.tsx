@@ -168,6 +168,7 @@ const DrawerContentDiv = styled.div<DrawerDivProps>`
   width: calc(100% - 40px);
   height: 100%;
   margin-left: 40px;
+  overflow-y: auto;
 
   animation: ${slideIn} .3s forwards;
   ${props => props.$targetState === DrawerAnimationState.Closed && css`

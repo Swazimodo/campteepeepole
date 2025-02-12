@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useClientSideMemo } from "@/components/clientSideMemoHook";
 
 export enum MediaSizes {
   'xs' = 320,
@@ -15,22 +16,25 @@ export const getMinWidthQuery = (size: MediaSizes) => `(min-width: ${size}px)`
 export const getMaxWidthQuery = (size: MediaSizes) => `(max-width: ${size - 0.02}px)`
 
 export const useMediaQuery = (size: MediaSizes) => {
-  const matchMediaUp = useMemo(() => window.matchMedia(`(min-width: ${size}px)`), [size])
-  const matchMediaDown = useMemo(() => window.matchMedia(`(max-width: ${size - 0.02}px)`), [size])
-  const [matchesUp, setMatchesUp] = useState(() => matchMediaUp.matches);
-  const [matchesDown, setMatchesDown] = useState(() => matchMediaDown.matches);
+  const matchMediaUp = useClientSideMemo(() => window.matchMedia(`(min-width: ${size}px)`), [size])
+  const matchMediaDown = useClientSideMemo(() => window.matchMedia(`(max-width: ${size - 0.02}px)`), [size])
+  const [windowGreaterThan, setMatchesUp] = useState(() => matchMediaUp !== null ? matchMediaUp.matches : false);
+  const [windowLessThan, setMatchesDown] = useState(() => matchMediaDown !== null ? matchMediaDown.matches : false);
 
-  const listener = useCallback(() => {
+  const handleResize = useCallback(() => {
+    if (matchMediaUp === null || matchMediaDown === null) {
+      return
+    }
     setMatchesUp(matchMediaUp.matches)
     setMatchesDown(matchMediaDown.matches)
   }, [matchMediaUp, setMatchesUp, matchMediaDown, setMatchesDown])
   useEffect(() => {
-    window.addEventListener('resize', listener);
-    return () => window.removeEventListener('resize', listener);
-  }, [listener]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [handleResize]);
 
   return {
-    matchesUp,
-    matchesDown
+    windowGreaterThan,
+    windowLessThan
   };
 };

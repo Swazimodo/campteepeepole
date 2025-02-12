@@ -5,10 +5,10 @@ import { SiteHeader } from '@/components/pageLayout/Header/SiteHeader'
 
 export const HeaderWrapper = () => {
   const drawerState = useDrawerState(DrawerAnimationState.Closed)
-  const { matchesDown } = useMediaQuery(MediaSizes.sm)
+  const { windowLessThan } = useMediaQuery(MediaSizes.sm)
 
   let nav = <Nav onNavigation={drawerState.handleCloseDrawer} />
-  if (matchesDown) {
+  if (windowLessThan) {
     nav = <Drawer drawerState={drawerState}>{nav}</Drawer>
   }
   return <>

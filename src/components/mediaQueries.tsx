@@ -16,8 +16,12 @@ export const getMinWidthQuery = (size: MediaSizes) => `(min-width: ${size}px)`
 export const getMaxWidthQuery = (size: MediaSizes) => `(max-width: ${size - 0.02}px)`
 
 export const useMediaQuery = (size: MediaSizes) => {
-  const matchMediaUp = useClientSideMemo(() => window.matchMedia(`(min-width: ${size}px)`), [size])
-  const matchMediaDown = useClientSideMemo(() => window.matchMedia(`(max-width: ${size - 0.02}px)`), [size])
+  // prevent this running from withing the SSR context
+  const getMatchMediaUp = useCallback(() => window.matchMedia(`(min-width: ${size}px)`), [size]);
+  const getMatchMediaDown = useCallback(() => window.matchMedia(`(max-width: ${size - 0.02}px)`), [size]);
+  const matchMediaUp = useClientSideMemo(getMatchMediaUp, [size])
+  const matchMediaDown = useClientSideMemo(getMatchMediaDown, [size])
+
   const [windowGreaterThan, setMatchesUp] = useState(() => matchMediaUp !== null ? matchMediaUp.matches : false);
   const [windowLessThan, setMatchesDown] = useState(() => matchMediaDown !== null ? matchMediaDown.matches : false);
 

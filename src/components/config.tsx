@@ -1,17 +1,24 @@
-import { useMemo, useRef } from 'react'
 import siteConfig from '@/static/config.json'
 
 interface SiteConfig {
   browserTitle: string,
   description: string,
   headerTitle: string,
-  tabs: SiteTabConfig[]
+  tabs: SiteTabConfig[],
+  awsConfig: AwsConfig
 }
 
 interface SiteTabConfig {
   path: string,
   title: string,
   index?: boolean
+}
+
+interface AwsConfig {
+  bucketName: string,
+  region: string,
+  galleryPath: string,
+  brochureName: string,
 }
 
 export const useSiteConfig = (): SiteConfig => {

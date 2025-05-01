@@ -7,7 +7,8 @@ interface PageProps {
 }
 
 export default async function Page(props: PageProps) {
-  const config = useTabConfig((await props.params).configPageId)
+  const pageParams = await props.params
+  const config = useTabConfig(pageParams.configPageId)
   return <h1>Hello, {config.title} Page!</h1>
 }
 

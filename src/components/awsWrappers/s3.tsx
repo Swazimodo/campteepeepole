@@ -37,7 +37,8 @@ export const useS3DirectoryImages = async (path: string) => {
       return Object.values((await s3Client.send(command)).Contents
         ?.filter(x => !!x.Key && !!x.Size && x.Size > 0)                                  // filter out invalid files
         .map(x => x.Key)                                                                  // keep only the file keys
-        .reduce<{ [key: string]: S3Image }>(reduceImageList(bucketName), {}) ?? {})        // group images and thumbnails
+        .filter(isImageFileType)                                                          // filter out files that are not jpg, png, or svg
+        .reduce<{ [key: string]: S3Image }>(reduceImageList(bucketName), {}) ?? {})       // group images and thumbnails
         .filter(x => !!x.url)                                                             // filter out thumbnails without a full sized image
     }
     catch (ex) {
@@ -45,6 +46,13 @@ export const useS3DirectoryImages = async (path: string) => {
     }
     return []
   }, [path])
+}
+
+/**
+ * checks if the filename ends in a supported image type: jpg, png, or svg
+ */
+const isImageFileType = (fileName?: string) => {
+  return ['.jpg', '.png', '.svg'].some(extension => fileName?.endsWith(extension))
 }
 
 /**

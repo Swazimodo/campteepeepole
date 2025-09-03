@@ -1,0 +1,8 @@
+{
+  "awsConfig": {
+    "bucketName": "tpp",
+    "region": "us-west-2",
+    "galleryPath": "gallery"
+  },
+  "thumbnailPrefix": "thumb_"
+}

@@ -1,4 +1,4 @@
-import { useSiteConfig, useTabConfig } from "@/components";
+import { useTemplateData, useTemplateTabConfig } from "@/components";
 
 interface PageProps {
   params: Promise<{
@@ -8,11 +8,11 @@ interface PageProps {
 
 export default async function Page(props: PageProps) {
   const pageParams = await props.params
-  const config = useTabConfig(pageParams.configPageId)
-  return <h1>Hello, {config.title} Page!</h1>
+  const tabConfig = useTemplateTabConfig(pageParams.configPageId)
+  return <h1>Hello, {tabConfig.title} Page!</h1>
 }
 
 export async function generateStaticParams() {
-  const config = useSiteConfig()
-  return await Promise.resolve(config.tabs.map(x => ({ configPageId: x.path })))
+  const templateData = useTemplateData()
+  return await Promise.resolve(templateData.tabs.map(x => ({ configPageId: x.path })))
 }

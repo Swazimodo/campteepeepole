@@ -8,8 +8,7 @@ interface SiteConfig {
 interface AwsConfig {
   bucketName: string,
   region: string,
-  galleryPath: string,
-  brochureName: string,
+  galleryPath: string
 }
 
 export const useSiteConfig = (): SiteConfig => {

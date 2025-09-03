@@ -4,7 +4,8 @@ interface TemplateSiteData {
   browserTitle: string,
   description: string,
   headerTitle: string,
-  tabs: TemplateTabConfig[]
+  tabs: TemplateTabConfig[],
+  brochurePath: string
 }
 
 interface TemplateTabConfig {

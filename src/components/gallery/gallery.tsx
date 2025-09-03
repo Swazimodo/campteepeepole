@@ -1,6 +1,6 @@
 import { FC } from "react"
 import { useS3DirectoryImages } from "@/components/awsWrappers/s3"
-import { useSiteConfig } from "@/components/config"
+import { useSiteConfig } from "@/components/siteConfig"
 
 
 export const Gallery: FC = async () => {

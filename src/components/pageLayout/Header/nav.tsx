@@ -2,7 +2,7 @@ import { FC } from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
 
-import { useSiteConfig } from '@/components/config';
+import { useTemplateData } from '@/components/templateData';
 import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
 interface NavProps {
@@ -10,7 +10,7 @@ interface NavProps {
 }
 
 export const Nav: FC<NavProps> = (props) => {
-  const config = useSiteConfig()
+  const config = useTemplateData()
 
   return <SiteNav>
     <SiteNavUl>

@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3"
-import { useSiteConfig } from "@/components/config"
+import { useSiteConfig } from "@/components/siteConfig"
 
 export const useS3Client = () => {
   const awsConfig = useSiteConfig().awsConfig
@@ -29,17 +29,17 @@ interface S3Image {
  * @param path S3 directory to pull images from
  */
 export const useS3DirectoryImages = async (path: string) => {
-  const { bucketName } = useSiteConfig().awsConfig
+  const { awsConfig: { bucketName }, thumbnailPrefix } = useSiteConfig()
   const s3Client = useS3Client()
   return await useMemo(async () => {
     try {
       const command = new ListObjectsV2Command({ Bucket: bucketName, Prefix: path })
       return Object.values((await s3Client.send(command)).Contents
-        ?.filter(x => !!x.Key && !!x.Size && x.Size > 0)                                  // filter out invalid files
-        .map(x => x.Key)                                                                  // keep only the file keys
-        .filter(isImageFileType)                                                          // filter out files that are not jpg, png, or svg
-        .reduce<{ [key: string]: S3Image }>(reduceImageList(bucketName), {}) ?? {})       // group images and thumbnails
-        .filter(x => !!x.url)                                                             // filter out thumbnails without a full sized image
+        ?.filter(x => !!x.Key && !!x.Size && x.Size > 0)                                                        // filter out invalid files
+        .map(x => x.Key)                                                                                        // keep only the file keys
+        .filter(isImageFileType)                                                                                // filter out files that are not jpg, png, or svg
+        .reduce<{ [key: string]: S3Image }>(groupImagesAndThumbnails(bucketName, thumbnailPrefix), {}) ?? {})   // group images and thumbnails
+        .filter(x => !!x.url)                                                                                   // filter out thumbnails without a full sized image
     }
     catch (ex) {
       console.error(ex)
@@ -58,12 +58,12 @@ const isImageFileType = (fileName?: string) => {
 /**
  * Groups full sized images with the thumbnails. Thumbnails are identified by a name starting with `thumb_`
  */
-const reduceImageList = (bucketName: string) => (accumulator: { [key: string]: S3Image }, currentValue?: string): { [key: string]: S3Image } => {
+const groupImagesAndThumbnails = (bucketName: string, thumbnailPrefix: string) => (accumulator: { [key: string]: S3Image }, currentValue?: string): { [key: string]: S3Image } => {
   if (!currentValue)
     return accumulator
 
   const fileName = currentValue.substring(currentValue.lastIndexOf('/') + 1)
-  const isThumb = fileName.startsWith('thumb_')
+  const isThumb = fileName.startsWith(thumbnailPrefix)
   const keyName = isThumb ? fileName : fileName
 
   let entry = accumulator[keyName]

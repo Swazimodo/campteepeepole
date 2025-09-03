@@ -1,13 +1,13 @@
 import { useSiteConfig, useTabConfig } from "@/components";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     configPageId: string
-  }
+  }>
 }
 
-export default function Page(props: PageProps) {
-  const config = useTabConfig(props.params.configPageId)
+export default async function Page(props: PageProps) {
+  const config = useTabConfig((await props.params).configPageId)
   return <h1>Hello, {config.title} Page!</h1>
 }
 

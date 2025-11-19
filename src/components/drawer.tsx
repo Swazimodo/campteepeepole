@@ -74,16 +74,12 @@ export const Drawer: FC<DrawerProps> = (props) => {
   }
 
   let animationFadeClass;
-  if (targetState === DrawerAnimationState.Open) {
-    animationFadeClass = "animate-fade-in";
-  } else {
-    animationFadeClass = "animate-fade-out";
-  }
-
   let animationSlideClass;
   if (targetState === DrawerAnimationState.Open) {
+    animationFadeClass = "animate-fade-in";
     animationSlideClass = "animate-slide-in";
   } else {
+    animationFadeClass = "animate-fade-out";
     animationSlideClass = "animate-slide-out";
   }
 

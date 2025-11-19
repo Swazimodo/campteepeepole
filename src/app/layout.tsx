@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 
 import 'src/app/global.css'
 
-import { PageLayout, useSiteConfig } from '@/components'
+import { PageLayout, useTemplateData } from '@/components'
 
 type GenerateMetadataProps = {
   params: { id: string }
@@ -20,11 +20,11 @@ export async function generateMetadata(
   // optionally access and extend (rather than replace) parent metadata
   // const previousImages = (await parent).openGraph?.images || []
 
-  const siteConfig = useSiteConfig()
+  const templateData = useTemplateData()
 
   return {
-    title: siteConfig.browserTitle,
-    description: siteConfig.description,
+    title: templateData.browserTitle,
+    description: templateData.description,
     icons: [{
       rel: 'icon',
       type: 'image/png',

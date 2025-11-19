@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 
 import 'src/app/global.css'
 
-import { PageLayout, useSiteConfig, StyledComponentsRegistry } from '@/components'
+import { PageLayout, useSiteConfig } from '@/components'
 
 type GenerateMetadataProps = {
   params: { id: string }
@@ -67,11 +67,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <StyledComponentsRegistry>
-          <PageLayout>
-            {children}
-          </PageLayout>
-        </StyledComponentsRegistry>
+        <PageLayout>
+          {children}
+        </PageLayout>
       </body>
     </html>
   )

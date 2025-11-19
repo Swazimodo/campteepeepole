@@ -1,5 +1,4 @@
 import { FC } from 'react';
-import styled from 'styled-components';
 
 import Header from '@/components/pageLayout/Header';
 import { Footer } from '@/components/pageLayout/footer';
@@ -10,32 +9,13 @@ interface LayoutProps {
 
 export const PageLayout: FC<LayoutProps> = (props) => {
   const { children } = props;
-  return <PageDiv>
-    <ContentWrapper>
+  return <div className='flex flex-col h-full'>
+    <div className='flex flex-col grow'>
       <Header />
-      <ContentMain>
+      <main className='grow w-6x p-0 pl-4 pr-4 m-4 ml-auto mr-auto'>
         {children}
-      </ContentMain>
-    </ContentWrapper>
+      </main>
+    </div>
     <Footer />
-  </PageDiv>
+  </div>
 }
-
-const PageDiv = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-`
-
-const ContentWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-`
-
-const ContentMain = styled.main`
-  flex-grow: 1;
-  max-width: 1200px;
-  padding: 0 16px;
-  margin: 16px auto;
-`

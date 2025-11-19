@@ -1,5 +1,4 @@
 import { FC, useCallback, useState } from "react";
-import styled, { css, keyframes } from "styled-components";
 
 export enum DrawerAnimationState {
   Open,
@@ -74,104 +73,34 @@ export const Drawer: FC<DrawerProps> = (props) => {
     return null
   }
 
-  return <DrawerWrapperDiv
-    $targetState={targetState}
+  let animationFadeClass;
+  if (targetState === DrawerAnimationState.Open) {
+    animationFadeClass = "animate-fade-in";
+  } else {
+    animationFadeClass = "animate-fade-out";
+  }
+
+  let animationSlideClass;
+  if (targetState === DrawerAnimationState.Open) {
+    animationSlideClass = "animate-slide-in";
+  } else {
+    animationSlideClass = "animate-slide-out";
+  }
+
+  return <div
+    className={`overflow-hidden fixed w-full h-full bg-[rgba(0,0,0,0.5)] ${animationFadeClass}`}
     onClick={handleCloseDrawer}
   >
-    {targetState === DrawerAnimationState.Open && <CloseButton
+    {targetState === DrawerAnimationState.Open && <button
+      className="fixed h-8 w-8 rounded-2xl border-none m-1 right-0 z-50 bg-[rgba(255,255,255,0.5)]"
       onClick={handleCloseDrawer}
-    >X</CloseButton>}
-    <DrawerContentDiv
-      $targetState={targetState}
+    >X</button>}
+    <div
+      className={`bg-green-700 relative h-full ml-10 overflow-y-auto ${animationSlideClass}`}
       onAnimationEnd={handleAnimationEnd}
       onClick={handleClick}
     >
       {children}
-    </DrawerContentDiv>
-  </DrawerWrapperDiv>
+    </div>
+  </div>
 }
-
-const CloseButton = styled.button`
-  position: fixed;
-  width: 32px;
-  height: 32px;
-  border: none;
-  right: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.5);
-  margin: 4px;
-  border-radius: 16px;
-`
-
-interface DrawerDivProps {
-  $targetState: DrawerAnimationState
-}
-
-const backdropFadeIn = keyframes`
-  from {
-    background-color: rgba(255, 255, 255, 0);
-  }
-  to {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-`
-
-const backdropFadeOut = keyframes`
-  from {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-  to {
-    background-color: rgba(255, 255, 255, 0);
-  }
-`
-
-const DrawerWrapperDiv = styled.div<DrawerDivProps>`
-  background-color: rgba(0, 0, 0, 0.5);
-
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-
-  animation: ${backdropFadeIn} .3s forwards;
-  ${props => props.$targetState === DrawerAnimationState.Closed && css`
-    animation: ${backdropFadeOut} .3s forwards;
-  `}
-`
-
-const slideIn = keyframes`
-  from {
-    transform: translate(100%, 0);
-    opacity:0;
-  }
-  to {
-    transform: translate(0%, 0);
-    opacity: 1;
-  }
-`
-
-const slideOut = keyframes`
-  from {
-    transform: translate(0%, 0);
-    opacity: 1;
-  }
-  to {
-    transform: translate(100%, 0);
-    opacity:0;
-  }
-`
-
-const DrawerContentDiv = styled.div<DrawerDivProps>`
-  background-color: green;
-
-  position: relative;
-  width: calc(100% - 40px);
-  height: 100%;
-  margin-left: 40px;
-  overflow-y: auto;
-
-  animation: ${slideIn} .3s forwards;
-  ${props => props.$targetState === DrawerAnimationState.Closed && css`
-    animation: ${slideOut} .3s forwards;
-  `}
-`

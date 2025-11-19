@@ -1,9 +1,7 @@
 import { FC } from 'react';
-import styled from 'styled-components';
 import Link from 'next/link';
 
 import { useTemplateData } from '@/components/templateData';
-import { getMinWidthQuery, MediaSizes } from '@/components/mediaQueries';
 
 interface NavProps {
   onNavigation?: (event: React.MouseEvent) => void
@@ -12,39 +10,13 @@ interface NavProps {
 export const Nav: FC<NavProps> = (props) => {
   const config = useTemplateData()
 
-  return <SiteNav>
-    <SiteNavUl>
-      {config.tabs.map(page => <SiteNavLi key={page.path}>
+  return <nav className='bg-purple-900 p-2'>
+    <ul className='m-0 p-0'>
+      {config.tabs.map(page => <li key={page.path} className='p-2 list-none text-orange-400 sm:inline-block'>
         <Link href={page.path} onClick={props?.onNavigation}>
           {page.title}
         </Link>
-      </SiteNavLi>)}
-    </SiteNavUl>
-  </SiteNav>
+      </li>)}
+    </ul>
+  </nav>
 }
-
-const SiteNav = styled.nav`
-  background-color: #4f1492;
-  padding: 8px 8px;
-`
-
-const SiteNavUl = styled.ul`
-  padding: 0;
-  margin: 0;
-`
-
-const SiteNavLi = styled.li`
-  padding: 8px 8px;
-  list-style-type: none;
-
-  a:link,
-  a:visited,
-  a:hover,
-  a:active {
-    color: orange;
-  }
-
-  @media ${getMinWidthQuery(MediaSizes.sm)} {
-    display: inline-block;
-  }
-`

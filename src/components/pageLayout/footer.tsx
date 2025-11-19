@@ -1,10 +1,7 @@
 import { FC } from 'react';
-import styled from 'styled-components'
 
 export const Footer: FC = () => {
-  return <SiteFooter>footer</SiteFooter>
+  return <footer className='bg-pink-500'>
+    footer
+  </footer>
 }
-
-const SiteFooter = styled.footer`
-  background-color: #c50fdd;
-`

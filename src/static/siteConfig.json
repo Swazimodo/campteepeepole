@@ -1,4 +1,5 @@
 {
+  "camp": "campTeepeePole",
   "awsConfig": {
     "bucketName": "tpp",
     "region": "us-west-2",

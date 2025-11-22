@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export const PageLayout: FC<LayoutProps> = (props) => {
   const { children } = props;
-  return <div className='flex flex-col h-full'>
+  return <div className='flex flex-col h-full bg-(--color-background)'>
     <div className='flex flex-col grow'>
       <Header />
       <main className='grow w-6x p-0 pl-4 pr-4 m-4 ml-auto mr-auto'>
@@ -17,5 +17,5 @@ export const PageLayout: FC<LayoutProps> = (props) => {
       </main>
     </div>
     <Footer />
-  </div>
+  </div>;
 }

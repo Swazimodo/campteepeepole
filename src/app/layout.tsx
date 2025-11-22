@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 
 import 'src/app/global.css'
 
-import { PageLayout, useTemplateData } from '@/components'
+import { PageLayout, useSiteConfig, useTemplateData } from '@/components'
 
 type GenerateMetadataProps = {
   params: { id: string }
@@ -64,8 +64,22 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const siteConfig = useSiteConfig();
+  let themeClass = '';
+  switch (siteConfig.camp) {
+    case 'campTeepeePole':
+      themeClass = 'theme-tpp';
+      break;
+    case 'campCherith':
+      themeClass = 'theme-cherith';
+      break;
+    default:
+      themeClass = 'theme-tpp';
+      console.error('Invalid camp, defaulting to campTeepeePole theme');
+  }
+
   return (
-    <html lang="en">
+    <html lang="en" className={themeClass}>
       <body>
         <PageLayout>
           {children}

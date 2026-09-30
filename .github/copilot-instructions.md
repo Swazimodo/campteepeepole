@@ -2,14 +2,14 @@
 
 ## Project Overview
 
-This is a Next.js 16 application for Camp Teepee Pole, built with TypeScript, React 18, and Tailwind CSS 4. The project uses Jest for testing and integrates with AWS S3.
+This is a Next.js 16 application for Camp Teepee Pole, built with TypeScript, React 18, and Tailwind CSS 4. The project uses Vitest for testing and integrates with AWS S3.
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS 4
-- **Testing**: Jest 30 with React Testing Library
+- **Testing**: Vitest 5 with React Testing Library
 - **Cloud**: AWS SDK (S3)
 - **Linting**: ESLint with Next.js config
 
@@ -39,7 +39,7 @@ This is a Next.js 16 application for Camp Teepee Pole, built with TypeScript, Re
 
 ### Testing
 
-- Write tests using Jest and React Testing Library
+- Write tests using Vitest and React Testing Library
 - Test files should be named `*.test.tsx` or `*.test.ts`
 - Use `describe` blocks to group related tests
 - Prefer user-centric testing (test behavior, not implementation)

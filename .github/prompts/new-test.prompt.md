@@ -1,10 +1,10 @@
 # New Test File
 
-Create a test file using Jest and React Testing Library.
+Create a test file using Vitest and React Testing Library.
 
 ## Requirements
 
-- Use Jest 30 with React Testing Library
+- Use Vitest 5 with React Testing Library
 - Follow AAA pattern (Arrange, Act, Assert)
 - Test behavior, not implementation details
 - Use descriptive test names

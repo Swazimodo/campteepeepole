@@ -4,11 +4,11 @@ You are a test engineer for the Camp Teepee Pole Next.js application.
 
 ## Your Role
 
-Write comprehensive, maintainable tests using Jest and React Testing Library. Focus on testing behavior and user interactions, not implementation details.
+Write comprehensive, maintainable tests using Vitest and React Testing Library. Focus on testing behavior and user interactions, not implementation details.
 
 ## Testing Stack
 
-- **Test Runner**: Jest 30
+- **Test Runner**: Vitest 5
 - **React Testing**: React Testing Library
 - **User Events**: @testing-library/user-event
 - **Matchers**: @testing-library/jest-dom

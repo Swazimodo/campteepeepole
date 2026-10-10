@@ -1,0 +1,288 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Camp Teepee Pole application resources.
+
+Parameters:
+  GitHubRepositoryUrl:
+    Type: String
+    Default: https://github.com/Swazimodo/campteepeepole
+  GitHubBranch:
+    Type: String
+    Default: master
+  GitHubAccessToken:
+    Type: String
+    NoEcho: true
+    Description: GitHub personal access token. Amplify uses it once to install its webhook and does not store it.
+
+Resources:
+  # --- Buckets ---
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration: { Status: Enabled }
+      NotificationConfiguration:
+        EventBridgeConfiguration: { EventBridgeEnabled: true }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  GalleryIngestBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration: { EventBridgeEnabled: true }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  GalleryLiveBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration: { EventBridgeEnabled: true }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+
+  GalleryLiveBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GalleryLiveBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub ${GalleryLiveBucket.Arn}/*
+
+  # --- Amplify ---
+
+  AmplifyServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: amplify.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: read-site-buckets
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  - !GetAtt ContentBucket.Arn
+                  - !GetAtt GalleryLiveBucket.Arn
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub ${ContentBucket.Arn}/*
+
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: !Ref AWS::StackName
+      Repository: !Ref GitHubRepositoryUrl
+      AccessToken: !Ref GitHubAccessToken
+      IAMServiceRole: !GetAtt AmplifyServiceRole.Arn
+      Platform: WEB
+      EnvironmentVariables:
+        - { Name: AMPLIFY_MONOREPO_APP_ROOT, Value: site }
+        - { Name: CONTENT_BUCKET, Value: !Ref ContentBucket }
+        - { Name: GALLERY_BUCKET, Value: !Ref GalleryLiveBucket }
+      BuildSpec: |
+        version: 1
+        applications:
+          - appRoot: site
+            frontend:
+              phases:
+                preBuild:
+                  commands:
+                    - corepack enable
+                    - yarn install --immutable
+                    - aws s3 sync "s3://$CONTENT_BUCKET" src/content --exclude "*" --include "*.mdx"
+                build:
+                  commands:
+                    - yarn build
+              artifacts:
+                baseDirectory: out
+                files:
+                  - "**/*"
+              cache:
+                paths:
+                  - node_modules/**/*
+
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt AmplifyApp.AppId
+      BranchName: !Ref GitHubBranch
+      Stage: PRODUCTION
+      EnableAutoBuild: true
+
+  # --- Build trigger with debounce ---
+
+  BuildQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      # Lambda guidance: 6 x function timeout + batching window
+      VisibilityTimeout: 300
+
+  BuildQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues: [!Ref BuildQueue]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sqs:SendMessage
+            Resource: !GetAtt BuildQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !GetAtt SiteChangedRule.Arn
+
+  SiteChangedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source: [aws.s3]
+        detail-type: [Object Created, Object Deleted]
+        detail:
+          bucket:
+            name: [!Ref ContentBucket, !Ref GalleryLiveBucket]
+      Targets:
+        - Id: build-queue
+          Arn: !GetAtt BuildQueue.Arn
+
+  SiteBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+      Policies:
+        - PolicyName: start-amplify-job
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - amplify:ListJobs
+                  - amplify:StartJob
+                Resource: !Sub ${AmplifyApp.Arn}/branches/${GitHubBranch}/*
+
+  SiteBuildFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.13
+      Handler: handler.handler
+      Code: ../services/site_build/src
+      Role: !GetAtt SiteBuildRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          APP_ID: !GetAtt AmplifyApp.AppId
+          BRANCH_NAME: !GetAtt AmplifyBranch.BranchName
+
+  SiteBuildEventSource:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt BuildQueue.Arn
+      FunctionName: !Ref SiteBuildFunction
+      BatchSize: 10000
+      MaximumBatchingWindowInSeconds: 120
+      ScalingConfig:
+        MaximumConcurrency: 2
+
+  # --- Gallery thumbnails ---
+
+  GalleryThumbnailRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: copy-gallery-images
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub ${GalleryIngestBucket.Arn}/*
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub ${GalleryLiveBucket.Arn}/*
+
+  PillowLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes: [python3.13]
+      Content: ../services/gallery_thumbnail/layer
+
+  GalleryThumbnailFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.13
+      Handler: handler.handler
+      Code: ../services/gallery_thumbnail/src
+      Role: !GetAtt GalleryThumbnailRole.Arn
+      Layers: [!Ref PillowLayer]
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          LIVE_BUCKET: !Ref GalleryLiveBucket
+          THUMB_PREFIX: thumb_
+
+  GalleryUploadedRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source: [aws.s3]
+        detail-type: [Object Created]
+        detail:
+          bucket:
+            name: [!Ref GalleryIngestBucket]
+      Targets:
+        - Id: gallery-thumbnail
+          Arn: !GetAtt GalleryThumbnailFunction.Arn
+
+  GalleryUploadedPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GalleryThumbnailFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt GalleryUploadedRule.Arn
+
+Outputs:
+  ContentBucketName:
+    Value: !Ref ContentBucket
+  GalleryIngestBucketName:
+    Value: !Ref GalleryIngestBucket
+  GalleryLiveBucketName:
+    Value: !Ref GalleryLiveBucket
+  AmplifyDefaultDomain:
+    Value: !Sub ${AmplifyBranch.BranchName}.${AmplifyApp.DefaultDomain}

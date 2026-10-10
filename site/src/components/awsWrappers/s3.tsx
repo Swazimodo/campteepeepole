@@ -4,18 +4,7 @@ import { useSiteConfig } from "@/components/siteConfig"
 
 export const useS3Client = () => {
   const awsConfig = useSiteConfig().awsConfig
-  return new S3Client({
-    region: awsConfig.region,
-    credentials: {
-      secretAccessKey: "MOCK",
-      accessKeyId: "MOCK",
-    },
-    signer: {
-      async sign(req) {
-        return req;
-      }
-    }
-  })
+  return new S3Client({ region: awsConfig.region })
 }
 
 interface S3Image {
@@ -29,7 +18,8 @@ interface S3Image {
  * @param path S3 directory to pull images from
  */
 export const useS3DirectoryImages = async (path: string) => {
-  const { awsConfig: { bucketName }, thumbnailPrefix } = useSiteConfig()
+  const { awsConfig, thumbnailPrefix } = useSiteConfig()
+  const bucketName = process.env.GALLERY_BUCKET ?? awsConfig.bucketName
   const s3Client = useS3Client()
   return await useMemo(async () => {
     try {

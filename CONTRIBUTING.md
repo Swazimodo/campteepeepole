@@ -21,7 +21,7 @@ Windows install steps using chocolatey. After every cli tool install, you will l
 
 # Repo directory
 
-## Routing: src\app\\*
+## Routing: site\src\app\\*
 This application uses next.js app routing. The `app` folder contains the pages which can be routed to. The directory structure defines the routes in the website.
 https://nextjs.org/docs/app/building-your-application/routing
 
@@ -48,5 +48,5 @@ Dynamic routes are still defined by the directory structure but you can use squa
 }
 ```
 
-## Components: src\components\\*
-next.js allows server side execution but all the components in this directory are for the client. This is indicated by `'use client';` in `src\components\index.ts`.
+## Components: site\src\components\\*
+next.js allows server side execution but all the components in this directory are for the client. This is indicated by `'use client';` in `site\src\components\index.ts`.

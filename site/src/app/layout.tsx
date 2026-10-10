@@ -2,7 +2,7 @@ import type { Metadata, ResolvingMetadata } from "next";
 
 import 'src/app/global.css'
 
-import { PageLayout, useSiteConfig, useTemplateData } from '@/components'
+import { loadTabs, PageLayout, useSiteConfig, useTemplateData } from '@/components'
 
 type GenerateMetadataProps = {
   params: { id: string }
@@ -59,7 +59,7 @@ export async function generateMetadata(
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
@@ -81,7 +81,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={themeClass}>
       <body>
-        <PageLayout>
+        <PageLayout tabs={await loadTabs()}>
           {children}
         </PageLayout>
       </body>

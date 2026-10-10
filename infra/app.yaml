@@ -115,6 +115,7 @@ Resources:
                   commands:
                     - corepack enable
                     - yarn install --immutable
+                    - rm -rf src/content
                     - aws s3 sync "s3://$CONTENT_BUCKET" src/content --exclude "*" --include "*.mdx"
                 build:
                   commands:

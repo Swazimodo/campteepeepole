@@ -17,6 +17,10 @@
       "title": "Events"
     },
     {
+      "path": "donate",
+      "title": "Donate"
+    },
+    {
       "path": "contact",
       "title": "Contact Us"
     }

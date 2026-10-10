@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: One-time account bootstrap. GitHub Actions OIDC deploy role, CloudFormation execution role, and artifact bucket.
+
+Parameters:
+  GitHubRepo:
+    Type: String
+    Default: Swazimodo/campteepeepole
+  GitHubBranch:
+    Type: String
+    Default: master
+  AppStackName:
+    Type: String
+    Default: campteepeepole
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  CfnExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudformation.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: manage-app-resources
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - amplify:*
+                  - events:*
+                  - lambda:*
+                  - s3:*
+                  - sqs:*
+                Resource: "*"
+              # ponytail: no permissions boundary, so app roles can still be granted any policy; add one if more people deploy
+              - Effect: Allow
+                Action: iam:*
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${AppStackName}-*
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Federated: !Ref GitHubOidcProvider }
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepo}:ref:refs/heads/${GitHubBranch}
+      Policies:
+        - PolicyName: deploy-app-stack
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: cloudformation:*
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AppStackName}/*
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:GetTemplateSummary
+                Resource: "*"
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt CfnExecutionRole.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt ArtifactBucket.Arn
+                  - !Sub ${ArtifactBucket.Arn}/*
+
+Outputs:
+  ArtifactBucketName:
+    Value: !Ref ArtifactBucket
+  CfnExecutionRoleArn:
+    Value: !GetAtt CfnExecutionRole.Arn
+  GitHubDeployRoleArn:
+    Value: !GetAtt GitHubDeployRole.Arn

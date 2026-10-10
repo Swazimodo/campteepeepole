@@ -16,7 +16,7 @@ flowchart LR
   subgraph bootstrap[campteepeepole-bootstrap]
     oidc[GitHubOidcProvider<br/>token.actions.githubusercontent.com]
     deployRole[GitHubDeployRole]
-    execRole[CfnExecutionRole<br/>amplify, events, lambda, s3, sqs<br/>iam on campteepeepole-* roles]
+    execRole[CfnExecutionRole]
     artifacts[(ArtifactBucket<br/>private)]
   end
 
@@ -40,6 +40,7 @@ flowchart LR
   editor([Editor])
   visitor([Visitor])
   github[(GitHub repo<br/>master)]
+  deployer([deploy.sh /<br/>GitHub Actions])
 
   subgraph app[campteepeepole]
     subgraph content[Content]
@@ -56,7 +57,7 @@ flowchart LR
     subgraph trigger[Build trigger with debounce]
       changedRule{{SiteChangedRule<br/>Object Created / Deleted}}
       queue[[BuildQueue<br/>SQS]]
-      buildFn[SiteBuildFunction<br/>batch window 120 s, concurrency 2]
+      buildFn[SiteBuildFunction]
     end
 
     subgraph hosting[Amplify Hosting]
@@ -73,6 +74,7 @@ flowchart LR
   contentBucket --> changedRule
   live --> changedRule
   changedRule --> queue --> buildFn
+  deployer -- invoke after deploy --> buildFn
   buildFn -- ListJobs / StartJob RELEASE --> amplify
   github -- push webhook --> amplify
 
@@ -84,5 +86,4 @@ flowchart LR
   visitor -- HTTPS images --> live
 ```
 
-Each Lambda has its own role: `SiteBuildRole` (SQS read, Amplify jobs on the branch) and
-`GalleryThumbnailRole` (read ingest, write live).
+Each Lambda has its own role: `SiteBuildRole` and `GalleryThumbnailRole`.

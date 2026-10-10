@@ -284,5 +284,7 @@ Outputs:
     Value: !Ref GalleryIngestBucket
   GalleryLiveBucketName:
     Value: !Ref GalleryLiveBucket
+  SiteBuildFunctionName:
+    Value: !Ref SiteBuildFunction
   AmplifyDefaultDomain:
     Value: !Sub ${AmplifyBranch.BranchName}.${AmplifyApp.DefaultDomain}

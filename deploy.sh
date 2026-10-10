@@ -74,6 +74,17 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   ${parameters[@]+"${parameters[@]}"}
 
+step "Starting a site build in Amplify"
+build_function="$(aws cloudformation describe-stacks --stack-name "$APP_STACK" \
+  --query "Stacks[0].Outputs[?OutputKey=='SiteBuildFunctionName'].OutputValue" --output text)"
+invoke_result="$(mktemp)"
+function_error="$(aws lambda invoke --function-name "$build_function" --query FunctionError --output text "$invoke_result")"
+payload="$(cat "$invoke_result")"
+rm -f "$invoke_result"
+[ "$function_error" = "None" ] || fail "The build trigger failed: $payload" \
+  "Check the $build_function logs in CloudWatch, or start a build from the Amplify console."
+ok "build requested (skipped if one is already waiting); follow it in the Amplify console"
+
 trap - ERR
 step "Deploy complete"
 aws cloudformation describe-stacks --stack-name "$APP_STACK" \

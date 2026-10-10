@@ -2,28 +2,5 @@
   "browserTitle": "CampTeepeePole",
   "description": "Summer camp for boys",
   "headerTitle": "Camp Teepee Pole",
-  "tabs": [
-    {
-      "path": "welcome",
-      "title": "Welcome",
-      "index": true
-    },
-    {
-      "path": "about",
-      "title": "About Us"
-    },
-    {
-      "path": "events",
-      "title": "Events"
-    },
-    {
-      "path": "donate",
-      "title": "Donate"
-    },
-    {
-      "path": "contact",
-      "title": "Contact Us"
-    }
-  ],
   "brochurePath": "brochure2025.pdf"
 }

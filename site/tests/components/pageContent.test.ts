@@ -1,33 +1,26 @@
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
+import { listPages, loadPage, loadTabs } from '@/components/pageContent';
+
+test("loadTabs_withOrderExports_sortsTabsByOrder", async () => {
+  const tabs = await loadTabs();
+
+  expect(tabs.map(x => x.path)).toEqual(['welcome', 'about', 'events', 'donate', 'contact']);
 });
 
-test("loadPageContent_withoutContentBaseUrl_readsLocalFile", async () => {
-  vi.stubEnv('CONTENT_BASE_URL', '');
-  const { loadPageContent } = await import('@/components/pageContent');
+test("loadTabs_withTitleExport_usesTitle", async () => {
+  const tabs = await loadTabs();
 
-  const content = await loadPageContent('about');
-
-  expect(content).toContain('# About Us');
+  expect(tabs.find(x => x.path === 'about')?.title).toBe('About Us');
 });
 
-test("loadPageContent_withContentBaseUrl_fetchesFromBaseUrl", async () => {
-  vi.stubEnv('CONTENT_BASE_URL', 'https://example.com/content');
-  const fetchMock = vi.fn().mockResolvedValue(new Response('# Remote'));
-  vi.stubGlobal('fetch', fetchMock);
-  const { loadPageContent } = await import('@/components/pageContent');
+test("loadPage_withoutPage_loadsTabIndex", async () => {
+  const { title } = await loadPage('about');
 
-  const content = await loadPageContent('about');
-
-  expect(fetchMock).toHaveBeenCalledWith('https://example.com/content/about.mdx');
-  expect(content).toBe('# Remote');
+  expect(title).toBe('About Us');
 });
 
-test("loadPageContent_withContentBaseUrlAndMissingFile_throws", async () => {
-  vi.stubEnv('CONTENT_BASE_URL', 'https://example.com/content');
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })));
-  const { loadPageContent } = await import('@/components/pageContent');
+test("listPages_withNestedFile_returnsIndexAndNestedPage", async () => {
+  const pages = await listPages();
 
-  await expect(loadPageContent('about')).rejects.toThrow('Content for "about" not found: 404');
+  expect(pages).toContainEqual({ tab: 'about', page: [] });
+  expect(pages).toContainEqual({ tab: 'about', page: ['history'] });
 });

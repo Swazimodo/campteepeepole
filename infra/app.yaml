@@ -2,9 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Camp Teepee Pole application resources.
 
 Parameters:
-  GitHubRepositoryUrl:
+  GitHubRepo:
     Type: String
-    Default: https://github.com/Swazimodo/campteepeepole
+    Default: Swazimodo/campteepeepole
   GitHubBranch:
     Type: String
     Default: master
@@ -18,6 +18,8 @@ Resources:
 
   ContentBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       VersioningConfiguration: { Status: Enabled }
       NotificationConfiguration:
@@ -30,6 +32,8 @@ Resources:
 
   GalleryIngestBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       NotificationConfiguration:
         EventBridgeConfiguration: { EventBridgeEnabled: true }
@@ -41,6 +45,8 @@ Resources:
 
   GalleryLiveBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       NotificationConfiguration:
         EventBridgeConfiguration: { EventBridgeEnabled: true }
@@ -91,7 +97,7 @@ Resources:
     Type: AWS::Amplify::App
     Properties:
       Name: !Ref AWS::StackName
-      Repository: !Ref GitHubRepositoryUrl
+      Repository: !Sub https://github.com/${GitHubRepo}
       AccessToken: !Ref GitHubAccessToken
       IAMServiceRole: !GetAtt AmplifyServiceRole.Arn
       Platform: WEB
@@ -109,6 +115,7 @@ Resources:
                   commands:
                     - corepack enable
                     - yarn install --immutable
+                    - rm -rf src/content
                     - aws s3 sync "s3://$CONTENT_BUCKET" src/content --exclude "*" --include "*.mdx"
                 build:
                   commands:
@@ -136,6 +143,8 @@ Resources:
     Properties:
       # Lambda guidance: 6 x function timeout + batching window
       VisibilityTimeout: 300
+      # A failing build trigger stops retrying after an hour
+      MessageRetentionPeriod: 3600
 
   BuildQueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -185,7 +194,7 @@ Resources:
                 Action:
                   - amplify:ListJobs
                   - amplify:StartJob
-                Resource: !Sub ${AmplifyApp.Arn}/branches/${GitHubBranch}/*
+                Resource: !Sub ${AmplifyApp.Arn}/branches/${AmplifyBranch.BranchName}/*
 
   SiteBuildFunction:
     Type: AWS::Lambda::Function
@@ -284,5 +293,7 @@ Outputs:
     Value: !Ref GalleryIngestBucket
   GalleryLiveBucketName:
     Value: !Ref GalleryLiveBucket
+  SiteBuildFunctionName:
+    Value: !Ref SiteBuildFunction
   AmplifyDefaultDomain:
     Value: !Sub ${AmplifyBranch.BranchName}.${AmplifyApp.DefaultDomain}

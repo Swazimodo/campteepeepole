@@ -30,13 +30,13 @@ region="$(aws configure get region || true)"
 ok "account $account, region $region"
 
 step "Reading the bootstrap stack ($BOOTSTRAP_STACK)"
-bootstrap_output() {
-  aws cloudformation describe-stacks --stack-name "$BOOTSTRAP_STACK" \
-    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+stack_output() {
+  aws cloudformation describe-stacks --stack-name "$1" \
+    --query "Stacks[0].Outputs[?OutputKey=='$2'].OutputValue" --output text
 }
-artifact_bucket="$(bootstrap_output ArtifactBucketName 2>/dev/null)" || fail "The bootstrap stack was not found in $region." \
+artifact_bucket="$(stack_output "$BOOTSTRAP_STACK" ArtifactBucketName 2>/dev/null)" || fail "The bootstrap stack was not found in $region." \
   "An admin must deploy infra/bootstrap.yaml once. See README.md, step 1."
-exec_role="$(bootstrap_output CfnExecutionRoleArn)"
+exec_role="$(stack_output "$BOOTSTRAP_STACK" CfnExecutionRoleArn)"
 ok "artifact bucket $artifact_bucket"
 
 parameters=()
@@ -73,6 +73,16 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_IAM \
   --no-fail-on-empty-changeset \
   ${parameters[@]+"${parameters[@]}"}
+
+step "Starting a site build in Amplify"
+build_function="$(stack_output "$APP_STACK" SiteBuildFunctionName)"
+invoke_result="$(mktemp)"
+function_error="$(aws lambda invoke --function-name "$build_function" --query FunctionError --output text "$invoke_result")"
+payload="$(cat "$invoke_result")"
+rm -f "$invoke_result"
+[ "$function_error" = "None" ] || fail "The build trigger failed: $payload" \
+  "Check the $build_function logs in CloudWatch, or start a build from the Amplify console."
+ok "build requested (skipped if one is already waiting); follow it in the Amplify console"
 
 trap - ERR
 step "Deploy complete"

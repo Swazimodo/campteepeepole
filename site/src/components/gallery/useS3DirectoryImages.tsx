@@ -50,7 +50,7 @@ const groupImagesAndThumbnails = (bucketName: string, thumbnailPrefix: string) =
 
   const fileName = currentValue.substring(currentValue.lastIndexOf('/') + 1)
   const isThumb = fileName.startsWith(thumbnailPrefix)
-  const keyName = isThumb ? fileName : fileName
+  const keyName = isThumb ? fileName.substring(thumbnailPrefix.length) : fileName
 
   let entry = accumulator[keyName]
   if (!entry) {

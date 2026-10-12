@@ -3,7 +3,7 @@ import { ListObjectsV2Command } from "@aws-sdk/client-s3"
 import { useS3Client } from "@/components/awsWrappers/s3"
 import { useSiteConfig } from "@/components/siteConfig"
 
-interface S3Image {
+export interface S3Image {
   url: string,
   thumbUrl?: string,
   alt: string,

@@ -1,55 +1,83 @@
-import { renderHook } from "@testing-library/react";
-import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { act, renderHook } from "@testing-library/react";
 import { useS3DirectoryImages } from "@/components/gallery/useS3DirectoryImages";
-
-const send = vi.fn();
-
-vi.mock("@/components/awsWrappers/s3", () => ({
-  useS3Client: () => ({ send }),
-}));
 
 vi.mock("@/components/siteConfig", () => ({
   useSiteConfig: () => ({
-    awsConfig: { bucketName: "config-bucket" },
+    awsConfig: { bucketName: "config-bucket", region: "us-west-2" },
     thumbnailPrefix: "thumb_",
   }),
 }));
 
-const listing = (...keys: string[]) => ({
-  Contents: keys.map(Key => ({ Key, Size: 1 })),
+const fetchMock = vi.fn();
+const bucketUrl = "https://config-bucket.s3.us-west-2.amazonaws.com";
+
+const contents = (key: string, size = 1) => `<Contents><Key>${key}</Key><Size>${size}</Size></Contents>`;
+
+const listing = (keys: string[], nextToken?: string) => ({
+  ok: true,
+  text: async () => `<?xml version="1.0" encoding="UTF-8"?>
+    <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+      ${keys.map(key => contents(key)).join("")}
+      ${nextToken ? `<NextContinuationToken>${nextToken}</NextContinuationToken>` : ""}
+    </ListBucketResult>`,
 });
 
-const getImages = (path = "gallery/") =>
-  renderHook(() => useS3DirectoryImages(path)).result.current;
+const rawListing = (body: string) => ({ ok: true, text: async () => `<ListBucketResult>${body}</ListBucketResult>` });
 
-const url = (key: string, bucket = "config-bucket") => `https://${bucket}.s3.amazonaws.com/${key}`;
+const getImages = async (path = "gallery/") => {
+  const { result } = renderHook(() => useS3DirectoryImages(path));
+  await act(() => new Promise(resolve => setTimeout(resolve)));
+  return result.current;
+};
+
+const requestedUrls = () => fetchMock.mock.calls.map(call => new URL(call[0]));
+
+const url = (key: string, base = bucketUrl) => `${base}/${key}`;
 
 beforeEach(() => {
-  send.mockReset();
+  fetchMock.mockReset();
+  vi.stubGlobal("fetch", fetchMock);
   vi.unstubAllEnvs();
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 test("useS3DirectoryImages_withPath_shouldListBucketWithPathPrefix", async () => {
-  send.mockResolvedValue(listing());
+  fetchMock.mockResolvedValue(listing([]));
 
   await getImages("gallery/2024/");
 
-  const command = send.mock.calls[0][0] as ListObjectsV2Command;
-  expect(command.input).toEqual({ Bucket: "config-bucket", Prefix: "gallery/2024/" });
+  const [request] = requestedUrls();
+  expect(request.origin).toBe(bucketUrl);
+  expect(request.searchParams.get("list-type")).toBe("2");
+  expect(request.searchParams.get("prefix")).toBe("gallery/2024/");
 });
 
-test("useS3DirectoryImages_withGalleryBucketEnv_shouldUseEnvBucket", async () => {
-  vi.stubEnv("GALLERY_BUCKET", "env-bucket");
-  send.mockResolvedValue(listing("gallery/a.jpg"));
+test("useS3DirectoryImages_withGalleryUrlEnv_shouldListAndLinkFromEnvUrl", async () => {
+  vi.stubEnv("NEXT_PUBLIC_GALLERY_URL", "https://cdn.example.com");
+  fetchMock.mockResolvedValue(listing(["gallery/a.jpg"]));
 
   const images = await getImages();
 
-  expect(send.mock.calls[0][0].input.Bucket).toBe("env-bucket");
-  expect(images[0].url).toBe(url("gallery/a.jpg", "env-bucket"));
+  expect(requestedUrls()[0].origin).toBe("https://cdn.example.com");
+  expect(images[0].url).toBe(url("gallery/a.jpg", "https://cdn.example.com"));
+});
+
+test("useS3DirectoryImages_withContinuationToken_shouldListNextPage", async () => {
+  fetchMock
+    .mockResolvedValueOnce(listing(["gallery/a.jpg"], "page2"))
+    .mockResolvedValueOnce(listing(["gallery/b.jpg"]));
+
+  const images = await getImages();
+
+  expect(requestedUrls()[1].searchParams.get("continuation-token")).toBe("page2");
+  expect(images.map(x => x.alt)).toEqual(["a.jpg", "b.jpg"]);
 });
 
 test("useS3DirectoryImages_withJpgPngSvg_shouldReturnEachImage", async () => {
-  send.mockResolvedValue(listing("gallery/a.jpg", "gallery/b.png", "gallery/c.svg"));
+  fetchMock.mockResolvedValue(listing(["gallery/a.jpg", "gallery/b.png", "gallery/c.svg"]));
 
   const images = await getImages();
 
@@ -61,7 +89,7 @@ test("useS3DirectoryImages_withJpgPngSvg_shouldReturnEachImage", async () => {
 });
 
 test("useS3DirectoryImages_withNonImageFiles_shouldExcludeThem", async () => {
-  send.mockResolvedValue(listing("gallery/a.jpg", "gallery/notes.txt", "gallery/b.gif"));
+  fetchMock.mockResolvedValue(listing(["gallery/a.jpg", "gallery/notes.txt", "gallery/b.gif"]));
 
   const images = await getImages();
 
@@ -69,14 +97,12 @@ test("useS3DirectoryImages_withNonImageFiles_shouldExcludeThem", async () => {
 });
 
 test("useS3DirectoryImages_withEmptyOrKeylessObjects_shouldExcludeThem", async () => {
-  send.mockResolvedValue({
-    Contents: [
-      { Key: "gallery/a.jpg", Size: 1 },
-      { Key: "gallery/empty.jpg", Size: 0 },
-      { Key: "gallery/nosize.jpg" },
-      { Size: 1 },
-    ],
-  });
+  fetchMock.mockResolvedValue(rawListing(
+    contents("gallery/a.jpg") +
+    contents("gallery/empty.jpg", 0) +
+    "<Contents><Key>gallery/nosize.jpg</Key></Contents>" +
+    "<Contents><Size>1</Size></Contents>"
+  ));
 
   const images = await getImages();
 
@@ -84,7 +110,7 @@ test("useS3DirectoryImages_withEmptyOrKeylessObjects_shouldExcludeThem", async (
 });
 
 test("useS3DirectoryImages_withThumbnailAndImage_shouldPairThumbUrlWithImage", async () => {
-  send.mockResolvedValue(listing("gallery/a.jpg", "gallery/thumb_a.jpg"));
+  fetchMock.mockResolvedValue(listing(["gallery/a.jpg", "gallery/thumb_a.jpg"]));
 
   const images = await getImages();
 
@@ -94,7 +120,7 @@ test("useS3DirectoryImages_withThumbnailAndImage_shouldPairThumbUrlWithImage", a
 });
 
 test("useS3DirectoryImages_withThumbnailOnly_shouldExcludeIt", async () => {
-  send.mockResolvedValue(listing("gallery/thumb_a.jpg"));
+  fetchMock.mockResolvedValue(listing(["gallery/thumb_a.jpg"]));
 
   const images = await getImages();
 
@@ -102,21 +128,32 @@ test("useS3DirectoryImages_withThumbnailOnly_shouldExcludeIt", async () => {
 });
 
 test("useS3DirectoryImages_withNoContents_shouldReturnEmpty", async () => {
-  send.mockResolvedValue({});
+  fetchMock.mockResolvedValue(listing([]));
 
   const images = await getImages();
 
   expect(images).toEqual([]);
 });
 
-test("useS3DirectoryImages_whenS3Throws_shouldLogErrorAndReturnEmpty", async () => {
-  const error = new Error("denied");
-  send.mockRejectedValue(error);
+test("useS3DirectoryImages_whenFetchRejects_shouldLogErrorAndReturnEmpty", async () => {
+  const error = new Error("network");
+  fetchMock.mockRejectedValue(error);
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => { });
 
   const images = await getImages();
 
   expect(images).toEqual([]);
   expect(consoleError).toHaveBeenCalledWith(error);
+  consoleError.mockRestore();
+});
+
+test("useS3DirectoryImages_whenResponseNotOk_shouldLogErrorAndReturnEmpty", async () => {
+  fetchMock.mockResolvedValue({ ok: false, status: 403 });
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => { });
+
+  const images = await getImages();
+
+  expect(images).toEqual([]);
+  expect(consoleError).toHaveBeenCalledWith(new Error(`Listing ${bucketUrl} failed with 403`));
   consoleError.mockRestore();
 });

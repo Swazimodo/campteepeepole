@@ -1,11 +1,13 @@
+"use client"
+
 import { FC } from "react"
 import { useS3DirectoryImages } from "@/components/gallery/useS3DirectoryImages"
 import { useSiteConfig } from "@/components/siteConfig"
 
 
-export const Gallery: FC = async () => {
+export const Gallery: FC = () => {
   const { galleryPath } = useSiteConfig().awsConfig
-  const files = await useS3DirectoryImages(galleryPath)
+  const files = useS3DirectoryImages(galleryPath)
   if (!files.length) {
     return null
   }

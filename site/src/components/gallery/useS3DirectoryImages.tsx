@@ -1,6 +1,4 @@
-import { useMemo } from "react"
-import { ListObjectsV2Command } from "@aws-sdk/client-s3"
-import { useS3Client } from "@/components/awsWrappers/s3"
+import { useEffect, useState } from "react"
 import { useSiteConfig } from "@/components/siteConfig"
 
 export interface S3Image {
@@ -10,28 +8,58 @@ export interface S3Image {
 }
 
 /**
- * Lists images from a directory in AWS S3. Images will be matched up with the thumbnail if available.
+ * Lists images from a directory in AWS S3 from the browser. Images will be matched up with the thumbnail if available.
+ * The bucket, or the CDN in front of it, must allow public listing and CORS.
  * @param path S3 directory to pull images from
  */
-export const useS3DirectoryImages = async (path: string) => {
+export const useS3DirectoryImages = (path: string) => {
   const { awsConfig, thumbnailPrefix } = useSiteConfig()
-  const bucketName = process.env.GALLERY_BUCKET ?? awsConfig.bucketName
-  const s3Client = useS3Client()
-  return await useMemo(async () => {
-    try {
-      const command = new ListObjectsV2Command({ Bucket: bucketName, Prefix: path })
-      return Object.values((await s3Client.send(command)).Contents
-        ?.filter(x => !!x.Key && !!x.Size && x.Size > 0)                                                        // filter out invalid files
-        .map(x => x.Key)                                                                                        // keep only the file keys
-        .filter(isImageFileType)                                                                                // filter out files that are not jpg, png, or svg
-        .reduce<{ [key: string]: S3Image }>(groupImagesAndThumbnails(bucketName, thumbnailPrefix), {}) ?? {})   // group images and thumbnails
-        .filter(x => !!x.url)                                                                                   // filter out thumbnails without a full sized image
+  const galleryUrl = process.env.NEXT_PUBLIC_GALLERY_URL ?? `https://${awsConfig.bucketName}.s3.${awsConfig.region}.amazonaws.com`
+  const [images, setImages] = useState<S3Image[]>([])
+
+  useEffect(() => {
+    let ignore = false
+    listKeys(galleryUrl, path)
+      .then(keys => {
+        if (ignore)
+          return
+        setImages(Object.values(keys
+          .filter(isImageFileType)                                                                   // filter out files that are not jpg, png, or svg
+          .reduce<{ [key: string]: S3Image }>(groupImagesAndThumbnails(galleryUrl, thumbnailPrefix), {}))  // group images and thumbnails
+          .filter(x => !!x.url))                                                                     // filter out thumbnails without a full sized image
+      })
+      .catch(ex => console.error(ex))
+    return () => { ignore = true }
+  }, [galleryUrl, path, thumbnailPrefix])
+
+  return images
+}
+
+/**
+ * Lists the keys of non-empty objects under `prefix` with the S3 ListObjectsV2 REST API, following continuation tokens.
+ */
+const listKeys = async (galleryUrl: string, prefix: string) => {
+  const keys: string[] = []
+  let continuationToken: string | undefined
+  do {
+    const query = new URLSearchParams({ "list-type": "2", prefix })
+    if (continuationToken)
+      query.set("continuation-token", continuationToken)
+
+    const response = await fetch(`${galleryUrl}/?${query}`)
+    if (!response.ok)
+      throw new Error(`Listing ${galleryUrl} failed with ${response.status}`)
+
+    const xml = new DOMParser().parseFromString(await response.text(), "application/xml")
+    for (const content of Array.from(xml.getElementsByTagName("Contents"))) {
+      const key = content.getElementsByTagName("Key")[0]?.textContent
+      const size = Number(content.getElementsByTagName("Size")[0]?.textContent)
+      if (key && size > 0)
+        keys.push(key)
     }
-    catch (ex) {
-      console.error(ex)
-    }
-    return []
-  }, [path])
+    continuationToken = xml.getElementsByTagName("NextContinuationToken")[0]?.textContent ?? undefined
+  } while (continuationToken)
+  return keys
 }
 
 /**
@@ -44,7 +72,7 @@ const isImageFileType = (fileName?: string) => {
 /**
  * Groups full sized images with the thumbnails. Thumbnails are identified by a name starting with `thumb_`
  */
-const groupImagesAndThumbnails = (bucketName: string, thumbnailPrefix: string) => (accumulator: { [key: string]: S3Image }, currentValue?: string): { [key: string]: S3Image } => {
+const groupImagesAndThumbnails = (galleryUrl: string, thumbnailPrefix: string) => (accumulator: { [key: string]: S3Image }, currentValue?: string): { [key: string]: S3Image } => {
   if (!currentValue)
     return accumulator
 
@@ -63,9 +91,9 @@ const groupImagesAndThumbnails = (bucketName: string, thumbnailPrefix: string) =
   }
 
   if (isThumb) {
-    entry.thumbUrl = `https://${bucketName}.s3.amazonaws.com/${currentValue}`
+    entry.thumbUrl = `${galleryUrl}/${currentValue}`
   } else {
-    entry.url = `https://${bucketName}.s3.amazonaws.com/${currentValue}`
+    entry.url = `${galleryUrl}/${currentValue}`
   }
 
   return accumulator

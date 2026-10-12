@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { useS3DirectoryImages } from "@/components/awsWrappers/s3"
+import { useS3DirectoryImages } from "@/components/gallery/useS3DirectoryImages"
 import { useSiteConfig } from "@/components/siteConfig"
 
 

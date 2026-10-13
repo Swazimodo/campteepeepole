@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP_STACK="${APP_STACK:-campteepeepole}"
+APP_STACK="${APP_STACK:-CampTemplate}"
 BOOTSTRAP_STACK="${BOOTSTRAP_STACK:-campteepeepole-bootstrap}"
 LAYER_DIR=services/gallery_thumbnail/layer
 

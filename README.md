@@ -54,10 +54,27 @@ The app deploy reads the role ARN and the bucket name from this stack's outputs.
 ### 2. Deploy the application
 
 [deploy.sh](deploy.sh) builds the Pillow layer, uploads the service source to the artifact bucket and
-deploys the `campteepeepole` stack. On the first deploy it asks for a GitHub personal access token,
+deploys the `CampTemplate` stack. On the first deploy it asks for a GitHub personal access token,
 which Amplify uses once to connect the repo.
 
 ```bash
 bash init.sh     # once
 bash deploy.sh
+```
+
+### 3. Give maintainers access
+
+Maintainers do not use the deploy roles. The app stack creates `MaintainerRole`, which any user in the
+account can assume if an admin allows it. It can edit the MDX files in the content bucket, add photos to
+the gallery ingest bucket and delete photos from the live gallery bucket.
+
+To let a user assume it, allow `sts:AssumeRole` on the role ARN in the user's own policy. The role ARN and
+bucket names are in the app stack outputs. The role has no console list permissions, so maintainers use
+the AWS CLI, for example:
+
+```bash
+aws s3 cp index.mdx "s3://<ContentBucketName>/about/index.mdx" --profile maintainer
+aws s3 cp photo.jpg "s3://<GalleryIngestBucketName>/photo.jpg" --profile maintainer
+aws s3 rm "s3://<GalleryLiveBucketName>/photo.jpg" --profile maintainer
+aws s3 rm "s3://<GalleryLiveBucketName>/thumb_photo.jpg" --profile maintainer
 ```

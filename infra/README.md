@@ -20,7 +20,7 @@ flowchart LR
     artifacts[(ArtifactBucket<br/>private)]
   end
 
-  cfn[CloudFormation<br/>campteepeepole stack]
+  cfn[CloudFormation<br/>CampTemplate stack]
 
   gha -- OIDC token --> oidc
   oidc -- AssumeRoleWithWebIdentity --> deployRole
@@ -37,12 +37,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  editor([Editor])
+  maintainer([Maintainer])
   visitor([Visitor])
   github[(GitHub repo<br/>master)]
   deployer([deploy.sh /<br/>GitHub Actions])
 
-  subgraph app[campteepeepole]
+  subgraph app[CampTemplate]
     subgraph content[Content]
       contentBucket[(ContentBucket<br/>private, versioned)]
     end
@@ -66,8 +66,9 @@ flowchart LR
     end
   end
 
-  editor -- MDX --> contentBucket
-  editor -- photos --> ingest
+  maintainer -- MDX CRUD --> contentBucket
+  maintainer -- add photos --> ingest
+  maintainer -- delete photos --> live
   ingest --> uploadedRule --> thumbFn
   thumbFn -- image + thumb_ --> live
 
@@ -86,4 +87,12 @@ flowchart LR
   visitor -- HTTPS images --> live
 ```
 
-Each Lambda has its own role: `SiteBuildRole` and `GalleryThumbnailRole`.
+Each Lambda has its own role (`SiteBuildRole`, `GalleryThumbnailRole`) and its own log group, which keeps logs for 90 days.
+
+Maintainers use `MaintainerRole`, not the deploy roles. It can:
+
+| Bucket | Can do |
+| --- | --- |
+| `ContentBucket` | List, and read, write and delete `*.mdx` files. |
+| `GalleryIngestBucket` | List and write files. |
+| `GalleryLiveBucket` | List and delete files. |

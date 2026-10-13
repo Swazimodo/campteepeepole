@@ -1,6 +1,7 @@
 # Infrastructure
 
 Two CloudFormation stacks. Deploy steps are in the [root README](../README.md#infrastructure).
+Account and sign-in setup is in [ACCOUNT_SETUP.md](ACCOUNT_SETUP.md).
 
 ## Bootstrap stack (`bootstrap.yaml`)
 

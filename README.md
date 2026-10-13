@@ -38,6 +38,9 @@ python services/gallery_thumbnail/test_handler.py
 
 ## Infrastructure
 
+The site deploys into its own AWS account. To set up the account and sign-in, see
+[infra/ACCOUNT_SETUP.md](infra/ACCOUNT_SETUP.md).
+
 ### 1. Bootstrap the account (once, as an admin)
 
 Creates the GitHub Actions deploy role, the CloudFormation execution role and the artifact bucket.

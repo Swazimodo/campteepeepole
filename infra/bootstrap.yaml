@@ -10,7 +10,7 @@ Parameters:
     Default: master
   AppStackName:
     Type: String
-    Default: campteepeepole
+    Default: CampTemplate
 
 Resources:
   GitHubOidcProvider:
@@ -50,6 +50,12 @@ Resources:
                   - s3:*
                   - sqs:*
                 Resource: "*"
+              - Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
+              - Effect: Allow
+                Action: logs:*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AppStackName}-*
               # ponytail: no permissions boundary, so app roles can still be granted any policy; add one if more people deploy
               - Effect: Allow
                 Action: iam:*

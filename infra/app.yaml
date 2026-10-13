@@ -196,6 +196,11 @@ Resources:
                   - amplify:StartJob
                 Resource: !Sub ${AmplifyApp.Arn}/branches/${AmplifyBranch.BranchName}/*
 
+  SiteBuildLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+
   SiteBuildFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -204,6 +209,8 @@ Resources:
       Code: ../services/site_build/src
       Role: !GetAtt SiteBuildRole.Arn
       Timeout: 30
+      LoggingConfig:
+        LogGroup: !Ref SiteBuildLogGroup
       Environment:
         Variables:
           APP_ID: !GetAtt AmplifyApp.AppId
@@ -250,6 +257,11 @@ Resources:
       CompatibleRuntimes: [python3.13]
       Content: ../services/gallery_thumbnail/layer
 
+  GalleryThumbnailLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+
   GalleryThumbnailFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -260,6 +272,8 @@ Resources:
       Layers: [!Ref PillowLayer]
       MemorySize: 1024
       Timeout: 60
+      LoggingConfig:
+        LogGroup: !Ref GalleryThumbnailLogGroup
       Environment:
         Variables:
           LIVE_BUCKET: !Ref GalleryLiveBucket
@@ -286,6 +300,43 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt GalleryUploadedRule.Arn
 
+  # --- Maintainer role ---
+  # Assumable by principals in this account whose own policy allows sts:AssumeRole on the role
+
+  MaintainerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root" }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: maintain-site-content
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource:
+                  - !GetAtt ContentBucket.Arn
+                  - !GetAtt GalleryIngestBucket.Arn
+                  - !GetAtt GalleryLiveBucket.Arn
+              # The content bucket is versioned, so a delete only adds a delete marker
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub ${ContentBucket.Arn}/*.mdx
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub ${GalleryIngestBucket.Arn}/*
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource: !Sub ${GalleryLiveBucket.Arn}/*
+
 Outputs:
   ContentBucketName:
     Value: !Ref ContentBucket
@@ -293,6 +344,8 @@ Outputs:
     Value: !Ref GalleryIngestBucket
   GalleryLiveBucketName:
     Value: !Ref GalleryLiveBucket
+  MaintainerRoleArn:
+    Value: !GetAtt MaintainerRole.Arn
   SiteBuildFunctionName:
     Value: !Ref SiteBuildFunction
   AmplifyDefaultDomain:
